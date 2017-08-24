@@ -1,9 +1,9 @@
-FROM golang:1.8-alpine
+FROM scratch
 
-ADD . /go/src/hello
+MAINTAINER Ryan Brewster <ryanpbrewster@gmail.com>
 
-RUN go install hello
+ADD hello /Production/hello/hello.exe
 
 EXPOSE 80
 
-CMD ["/go/bin/hello"]
+CMD ["/Production/hello/hello.exe"]
