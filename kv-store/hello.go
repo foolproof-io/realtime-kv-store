@@ -22,7 +22,7 @@ func main() {
         server.HandleFunc("/", handleKeyValue)
 
         log.Println("Server listening on port 80")
-        log.Fatal(http.ListenAndServe(":8080", server))
+        log.Fatal(http.ListenAndServe(":80", server))
 }
 
 func handleKeyValue(w http.ResponseWriter, r *http.Request) {
