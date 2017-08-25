@@ -2,7 +2,7 @@ FROM scratch
 
 MAINTAINER Ryan Brewster <ryanpbrewster@gmail.com>
 
-ADD hello /Production/hello/hello.exe
+ADD hello.exe /Production/hello/hello.exe
 
 EXPOSE 80
 
