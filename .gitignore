@@ -1,1 +1,6 @@
 *.exe
+/kvstore/.idea/
+/kvstore/pkg/
+/kvstore/bin/
+/kvstore/src/*
+!/kvstore/src/foolproof.io
