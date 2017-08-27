@@ -38,12 +38,24 @@ type server struct {
 	kvs map[string]string
 }
 
-func (s *server) GetValue(ctx context.Context, in *pb.GetValueRequest) (*pb.GetValueReply, error) {
-	return &pb.GetValueReply{Value: s.kvs[in.Key]}, nil
+func (s *server) GetValue(ctx context.Context, request *pb.GetValueRequest) (*pb.GetValueReply, error) {
+	return &pb.GetValueReply{Value: s.kvs[request.Key]}, nil
 }
-func (s *server) SetValue(ctx context.Context, in *pb.SetValueRequest) (*pb.SetValueReply, error) {
-	s.kvs[in.Key] = in.Value
+func (s *server) SetValue(ctx context.Context, request *pb.SetValueRequest) (*pb.SetValueReply, error) {
+	s.kvs[request.Key] = request.Value
 	return &pb.SetValueReply{}, nil
+}
+
+func (s *server) Listen(req *pb.ListenRequest, stream pb.KvStore_ListenServer) error {
+	log.Printf("got a stream request, sending %d elements immediately", len(s.kvs))
+	for k, v := range s.kvs {
+		log.Printf("sending %s -> %s", k, v)
+		stream.Send(&pb.ListenReply{
+			Key:   k,
+			Value: v,
+		})
+	}
+	return nil
 }
 
 func main() {

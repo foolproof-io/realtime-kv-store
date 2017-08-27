@@ -26,6 +26,7 @@ import (
 	pb "foolproof.io/kvstore/kvstore"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"io"
 )
 
 const (
@@ -62,6 +63,21 @@ func main() {
 			log.Fatalf("could not set value: %v", err)
 		}
 		log.Println(r)
+	case "listen":
+		listener, err := c.Listen(context.Background(), &pb.ListenRequest{})
+		if err != nil {
+			log.Fatalf("could not set value: %v", err)
+		}
+		for {
+			kv, err := listener.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Fatalf("error while listening: %s", err)
+			}
+			log.Printf("%s <- %s", kv.Key, kv.Value)
+		}
 	default:
 		log.Fatal(usage)
 	}
