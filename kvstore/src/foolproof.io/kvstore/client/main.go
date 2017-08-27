@@ -19,23 +19,26 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
-	"os"
 
+	pb "foolproof.io/kvstore/kvstore"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	pb "foolproof.io/kvstore/kvstore"
 )
 
 const (
-	address    = "localhost:50051"
-  usage      = "read the source, i'm lazy"
+	usage = "read the source, i'm lazy"
 )
 
 func main() {
-  
+	address := flag.String("address", "localhost", "the server address")
+	port := flag.Int("port", 8080, "the port the server is listening to")
+	flag.Parse()
+
 	// Set up a connection to the server.
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", *address, *port), grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -43,32 +46,23 @@ func main() {
 	c := pb.NewKvStoreClient(conn)
 
 	// Contact the server and print out its response.
-  if len(os.Args) < 2 {
-    log.Fatal(usage)
-  }
-  switch os.Args[1] {
-    case "get":
-      if len(os.Args) != 3 {
-        log.Fatal(usage)
-      }
-      key := os.Args[2]
-      r, err := c.GetValue(context.Background(), &pb.GetValueRequest{Key: key})
-      if err != nil {
-        log.Fatalf("could not get value: %v", err)
-      }
-      log.Println(r)
-    case "set":
-      if len(os.Args) != 4 {
-        log.Fatal(usage)
-      }
-      key := os.Args[2]
-      value := os.Args[3]
-      r, err := c.SetValue(context.Background(), &pb.SetValueRequest{Key: key, Value: value})
-      if err != nil {
-        log.Fatalf("could not set value: %v", err)
-      }
-      log.Println(r)
-    default:
-      log.Fatal(usage)
-  }
+	switch flag.Arg(0) {
+	case "get":
+		key := flag.Arg(1)
+		r, err := c.GetValue(context.Background(), &pb.GetValueRequest{Key: key})
+		if err != nil {
+			log.Fatalf("could not get value: %v", err)
+		}
+		log.Println(r)
+	case "set":
+		key := flag.Arg(1)
+		value := flag.Arg(2)
+		r, err := c.SetValue(context.Background(), &pb.SetValueRequest{Key: key, Value: value})
+		if err != nil {
+			log.Fatalf("could not set value: %v", err)
+		}
+		log.Println(r)
+	default:
+		log.Fatal(usage)
+	}
 }

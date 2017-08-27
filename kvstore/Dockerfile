@@ -4,6 +4,6 @@ MAINTAINER Ryan Brewster <ryanpbrewster@gmail.com>
 
 EXPOSE 80
 
-ADD kvstore.exe /Production/kvstore/kvstore.exe
+ADD server.exe /Production/kvstore/server.exe
 
-CMD ["/Production/kvstore/kvstore.exe"]
+CMD ["/Production/kvstore/server.exe", "--port=80"]
