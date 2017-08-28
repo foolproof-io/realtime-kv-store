@@ -28,6 +28,7 @@ import (
 	"os"
 
 	pb "foolproof.io/kvstore/kvstore"
+	"github.com/google/uuid"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -35,7 +36,8 @@ import (
 
 // server is used to implement kvstore.KvStoreServer.
 type server struct {
-	kvs map[string]string
+	kvs       map[string]string
+	listeners map[uuid.UUID]chan pb.ListenReply
 }
 
 func (s *server) GetValue(ctx context.Context, request *pb.GetValueRequest) (*pb.GetValueReply, error) {
@@ -43,17 +45,36 @@ func (s *server) GetValue(ctx context.Context, request *pb.GetValueRequest) (*pb
 }
 func (s *server) SetValue(ctx context.Context, request *pb.SetValueRequest) (*pb.SetValueReply, error) {
 	s.kvs[request.Key] = request.Value
+	for _, listener := range s.listeners {
+		listener <- pb.ListenReply{
+			Key:   request.Key,
+			Value: request.Value,
+		}
+	}
+
 	return &pb.SetValueReply{}, nil
 }
 
 func (s *server) Listen(req *pb.ListenRequest, stream pb.KvStore_ListenServer) error {
-	log.Printf("got a stream request, sending %d elements immediately", len(s.kvs))
-	for k, v := range s.kvs {
-		log.Printf("sending %s -> %s", k, v)
-		stream.Send(&pb.ListenReply{
-			Key:   k,
-			Value: v,
-		})
+	ch := make(chan pb.ListenReply)
+	defer close(ch)
+	go func() {
+		for k, v := range s.kvs {
+			ch <- pb.ListenReply{
+				Key:   k,
+				Value: v,
+			}
+		}
+	}()
+
+	id := uuid.New()
+	s.listeners[id] = ch
+	defer delete(s.listeners, id)
+
+	for kv := range ch {
+		if err := stream.Send(&kv); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -69,6 +90,7 @@ func main() {
 
 	host, _ := os.Hostname()
 	pb.RegisterKvStoreServer(s, &server{
+		listeners: map[uuid.UUID]chan pb.ListenReply{},
 		kvs: map[string]string{
 			"host": host,
 		},
